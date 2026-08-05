@@ -34,9 +34,9 @@ impl Db {
             CREATE TABLE IF NOT EXISTS vaults (
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
-                desc TEXT
+                desc TEXT,
                 created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL, 
+                updated_at INTEGER NOT NULL
             )
         ",
             [],
@@ -62,7 +62,7 @@ impl Db {
         let time = Utc::now().timestamp();
         self.conn.execute(
             "
-            INSERT INTO vaults (name,desc,created_at,updated_at)
+            INSERT INTO vaults (name, desc, created_at, updated_at)
             VALUES(?1,?2,?3,?4)
             ",
             (name, desc, &time, &time),
@@ -73,7 +73,7 @@ impl Db {
     pub fn get_vaults(&self) -> Result<Vec<Vault>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, desc,created_at,updated_at FROM vaults")?;
+            .prepare("SELECT id, name, desc, created_at, updated_at FROM vaults")?;
 
         let vaults = stmt.query_map([], |row| {
             Ok(Vault {
@@ -90,5 +90,69 @@ impl Db {
             result.push(vault?);
         }
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_database_initialization() {
+        let db = Db::new(":memory:").unwrap();
+        let result = db.initialize();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_empty_vaults() {
+        let db = Db::new(":memory:").unwrap();
+        db.initialize().unwrap();
+        let vaults = db.get_vaults().unwrap();
+        assert_eq!(vaults.len(), 0);
+    }
+
+    #[test]
+    fn test_multiple_vaults() {
+        let db = Db::new(":memory:").unwrap();
+        db.initialize().unwrap();
+        db.add_new_vault("Personal", None).unwrap();
+        db.add_new_vault("Work", None).unwrap();
+        let vaults = db.get_vaults().unwrap();
+
+        assert_eq!(vaults.len(), 2);
+        assert_eq!(vaults[0].name, "Personal");
+        assert_eq!(vaults[1].name, "Work");
+    }
+
+    #[test]
+    fn test_vault_with_description() {
+        let db = Db::new(":memory:").unwrap();
+        db.initialize().unwrap();
+        db.add_new_vault("Personal", Some("My personal accounts"))
+            .unwrap();
+        let vaults = db.get_vaults().unwrap();
+        assert_eq!(vaults[0].desc, Some("My personal accounts".to_string()));
+    }
+
+    #[test]
+    fn test_foreign_key_constraint() {
+        let db = Db::new(":memory:").unwrap();
+        db.initialize().unwrap();
+        let result = db.conn.execute(
+            "
+            INSERT INTO entries (
+                access_key,
+                access_token,
+                token_type,
+                vault_id,
+                created_at,
+                updated_at
+            )
+            VALUES (?1, ?2, ?3)
+            ",
+            ("username", "password", "text", 999, 23, 23),
+        );
+        assert!(result.is_err());
     }
 }
