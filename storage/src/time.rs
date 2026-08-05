@@ -1,0 +1,33 @@
+use chrono::Utc;
+use jalali_calendar::JalaliDateTime;
+pub fn convert_to_jalali(timestamp: i64) -> String {
+    let jalali = JalaliDateTime::from_unix_timestamp(timestamp).unwrap();
+
+    jalali.format("%Y/%m/%d")
+}
+pub fn distance_calculator(timestmp: i64) -> String {
+    let now = Utc::now().timestamp();
+    let difference = now - timestmp;
+    time_ago(difference)
+}
+
+fn time_ago(seconds: i64) -> String {
+    if seconds < 60 {
+        format!("{} seconds ago", seconds)
+    } else if seconds < 3600 {
+        let minutes = seconds / 60;
+        format!("{} minutes ago", minutes)
+    } else if seconds < 86400 {
+        let hours = seconds / 3600;
+        format!("{} hours ago", hours)
+    } else if seconds < 2_592_000 {
+        let days = seconds / 86400;
+        format!("{} days ago", days)
+    } else if seconds < 31_536_000 {
+        let months = seconds / 2_592_000;
+        format!("{} months ago", months)
+    } else {
+        let years = seconds / 31_536_000;
+        format!("{} years ago", years)
+    }
+}
