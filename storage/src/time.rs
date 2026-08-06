@@ -13,21 +13,23 @@ pub fn distance_calculator(timestmp: i64) -> String {
 
 fn time_ago(seconds: i64) -> String {
     if seconds < 60 {
-        format!("{} seconds ago", seconds)
+        format!("{} قبل", seconds)
     } else if seconds < 3600 {
         let minutes = seconds / 60;
-        format!("{} minutes ago", minutes)
+        format!("{} قبل", minutes)
     } else if seconds < 86400 {
         let hours = seconds / 3600;
-        format!("{} hours ago", hours)
+        format!("{} قبل", hours)
     } else if seconds < 2_592_000 {
         let days = seconds / 86400;
-        format!("{} days ago", days)
+        format!("{} قبل", days)
     } else if seconds < 31_536_000 {
         let months = seconds / 2_592_000;
-        format!("{} months ago", months)
+        format!("{} قبل", months)
     } else {
         let years = seconds / 31_536_000;
-        format!("{} years ago", years)
+        format!("{} قبل", years)
     }
 }
+#[cfg(test)]
+mod tests {}

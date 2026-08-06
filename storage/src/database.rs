@@ -206,7 +206,13 @@ mod tests {
 
         assert_eq!(vaults.len(), 2);
         assert_eq!(vaults[0].name, "Personal");
+        assert_eq!(vaults[0].desc, Some(String::from("My Personal Account")));
+        assert_eq!(vaults[0].created_at, time);
+        assert_eq!(vaults[0].updated_at, time);
         assert_eq!(vaults[1].name, "Work");
+        assert_eq!(vaults[1].desc, Some(String::from("My Work Account")));
+        assert_eq!(vaults[1].created_at, time);
+        assert_eq!(vaults[1].updated_at, time);
     }
 
     #[test]
@@ -236,11 +242,12 @@ mod tests {
                 access_key,
                 access_token,
                 token_type,
+                desc,
                 vault_id,
                 created_at,
                 updated_at
             )
-            VALUES (?1, ?2, ?3)
+            VALUES (?1, ?2, ?3,?4,?5,?6)
             ",
             ("username", "password", "text", 999, 23, 23),
         );
@@ -262,6 +269,8 @@ mod tests {
         let vault = db.get_vault(1).unwrap();
         assert_eq!(v.name, vault.name);
         assert_eq!(v.desc, vault.desc);
+        assert_eq!(v.created_at, vault.created_at);
+        assert_eq!(v.updated_at, vault.updated_at);
     }
 
     #[test]
@@ -295,5 +304,8 @@ mod tests {
         assert_eq!(e.access_key, entry.access_key);
         assert_eq!(e.access_token, entry.access_token);
         assert_eq!(e.token_type, entry.token_type);
+        assert_eq!(e.desc, entry.desc);
+        assert_eq!(e.created_at, entry.created_at);
+        assert_eq!(e.updated_at, entry.updated_at);
     }
 }
