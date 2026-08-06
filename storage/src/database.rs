@@ -1,21 +1,22 @@
-use chrono::Utc;
 use rusqlite::{Connection, Result};
 
 pub struct Vault {
     pub id: Option<i64>,
     pub name: String,
     pub desc: Option<String>,
-    pub created_at: Option<i64>,
-    pub updated_at: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 #[derive(Debug)]
 pub struct Entry {
     pub id: Option<i64>,
     pub access_key: String,
     pub access_token: String,
-    pub token_type: Option<String>,
-    pub created_at: Option<i64>,
-    pub updated_at: Option<i64>,
+    pub token_type: String,
+    pub desc: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub vault_id: i64,
 }
 
 pub struct Db {
@@ -48,6 +49,7 @@ impl Db {
                 access_key TEXT NOT NULL,
                 access_token TEXT NOT NULL,
                 token_type TEXT NOT NULL,
+                desc TEXT,
                 vault_id INTEGER NOT NULL,
                 created_at INTEGER NOT NULL, 
                 updated_at INTEGER NOT NULL,
@@ -58,66 +60,108 @@ impl Db {
         )?;
         Ok(())
     }
-    pub fn add_new_vault(&self, vault: &Vault) -> Result<()> {
-        let time = Utc::now().timestamp();
+    pub fn add_vault(&self, vault: &Vault) -> Result<()> {
         self.conn.execute(
             "
             INSERT INTO vaults (name, desc, created_at, updated_at)
             VALUES(?1,?2,?3,?4)
             ",
-            (&vault.name, &vault.desc, &time, &time),
+            (
+                &vault.name,
+                &vault.desc,
+                &vault.created_at,
+                &vault.updated_at,
+            ),
+        )?;
+        Ok(())
+    }
+
+    pub fn add_entry(&self, entry: &Entry) -> Result<()> {
+        self.conn.execute(
+            "
+            INSERT INTO entries (access_key, access_token, token_type, desc, created_at, updated_at, vault_id)
+            VALUES(?1,?2,?3,?4,?5,?6,?7)
+            ",
+            (
+                &entry.access_key,
+                &entry.access_token,
+                &entry.token_type,
+                &entry.desc,
+                &entry.created_at,
+                &entry.updated_at,
+                &entry.vault_id
+            ),
         )?;
         Ok(())
     }
 
     pub fn get_vaults(&self) -> Result<Vec<Vault>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name, desc, created_at, updated_at FROM vaults")?;
-
+        let mut stmt = self.conn.prepare("SELECT * FROM vaults")?;
         let vaults = stmt.query_map([], |row| {
             Ok(Vault {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                desc: row.get(2)?,
-                created_at: row.get(3)?,
-                updated_at: row.get(4)?,
+                id: row.get("id")?,
+                name: row.get("name")?,
+                desc: row.get("desc")?,
+                created_at: row.get("created_at")?,
+                updated_at: row.get("updated_at")?,
             })
         })?;
-        let mut result = Vec::new();
-
-        for vault in vaults {
-            result.push(vault?);
-        }
-        Ok(result)
+        vaults.collect()
     }
-
     pub fn get_entries_from_vault(&self, vault_id: i64) -> Result<Vec<Entry>> {
         let mut stmt = self
             .conn
-            .prepare(" SELECT * FROM entries WHERE vault_id =?1 ")?;
+            .prepare(" SELECT * FROM entries WHERE vault_id =?1")?;
 
         let entries = stmt.query_map([vault_id], |row| {
             Ok(Entry {
-                id: row.get(0)?,
-                access_key: row.get(1)?,
-                access_token: row.get(2)?,
-                token_type: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
+                id: row.get("id")?,
+                access_key: row.get("access_key")?,
+                access_token: row.get("access_token")?,
+                token_type: row.get("token_type")?,
+                desc: row.get("desc")?,
+                created_at: row.get("created_at")?,
+                updated_at: row.get("updated_at")?,
+                vault_id: row.get("vault_id")?,
             })
         })?;
-        let mut result = Vec::new();
-        for e in entries {
-            result.push(e?);
-        }
-        Ok(result)
+        entries.collect()
+    }
+    pub fn get_vault(&self, vault_id: i64) -> Result<Vault> {
+        let mut stmt = self.conn.prepare("SELECT * FROM vaults WHERE id = ?1")?;
+        let vault = stmt.query_row([vault_id], |row| {
+            Ok(Vault {
+                id: row.get("id")?,
+                name: row.get("name")?,
+                desc: row.get("desc")?,
+                created_at: row.get("created_at")?,
+                updated_at: row.get("updated_at")?,
+            })
+        })?;
+        Ok(vault)
+    }
+    pub fn get_entry(&self, entry_id: i64) -> Result<Entry> {
+        let mut stmt = self.conn.prepare("SELECT * FROM entries WHERE id = ?1")?;
+        let entry = stmt.query_row([entry_id], |row| {
+            Ok(Entry {
+                id: row.get("id")?,
+                access_key: row.get("access_key")?,
+                access_token: row.get("access_token")?,
+                token_type: row.get("token_type")?,
+                desc: row.get("desc")?,
+                created_at: row.get("created_at")?,
+                updated_at: row.get("updated_at")?,
+                vault_id: row.get("vault_id")?,
+            })
+        })?;
+        Ok(entry)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::string;
+
+    use chrono::Utc;
 
     use super::*;
 
@@ -140,24 +184,24 @@ mod tests {
     fn test_multiple_vaults() {
         let db = Db::new(":memory:").unwrap();
         db.initialize().unwrap();
-
+        let time = Utc::now().timestamp();
         let v1 = Vault {
             id: None,
             name: String::from("Personal"),
             desc: Some(String::from("My Personal Account")),
-            created_at: None,
-            updated_at: None,
+            created_at: time,
+            updated_at: time,
         };
 
         let v2 = Vault {
             id: None,
             name: String::from("Work"),
             desc: Some(String::from("My Work Account")),
-            created_at: None,
-            updated_at: None,
+            created_at: time,
+            updated_at: time,
         };
-        db.add_new_vault(&v1).unwrap();
-        db.add_new_vault(&v2).unwrap();
+        db.add_vault(&v1).unwrap();
+        db.add_vault(&v2).unwrap();
         let vaults = db.get_vaults().unwrap();
 
         assert_eq!(vaults.len(), 2);
@@ -169,16 +213,17 @@ mod tests {
     fn test_vault_with_description() {
         let db = Db::new(":memory:").unwrap();
         db.initialize().unwrap();
+        let time = Utc::now().timestamp();
         let v = Vault {
             id: None,
             name: String::from("Personal"),
             desc: Some(String::from("My Personal Account")),
-            created_at: None,
-            updated_at: None,
+            created_at: time,
+            updated_at: time,
         };
-        db.add_new_vault(&v).unwrap();
+        db.add_vault(&v).unwrap();
         let vaults = db.get_vaults().unwrap();
-        assert_eq!(vaults[0].desc, Some("My Personal Account".to_string()));
+        assert_eq!(vaults[0].desc, Some(String::from("My Personal Account")));
     }
 
     #[test]
@@ -200,5 +245,55 @@ mod tests {
             ("username", "password", "text", 999, 23, 23),
         );
         assert!(result.is_err());
+    }
+    #[test]
+    fn get_single_vault() {
+        let db = Db::new(":memory:").unwrap();
+        db.initialize().unwrap();
+        let time = Utc::now().timestamp();
+        let v = Vault {
+            id: None,
+            name: String::from("Personal"),
+            desc: Some(String::from("My Personal Account")),
+            created_at: time,
+            updated_at: time,
+        };
+        db.add_vault(&v).unwrap();
+        let vault = db.get_vault(1).unwrap();
+        assert_eq!(v.name, vault.name);
+        assert_eq!(v.desc, vault.desc);
+    }
+
+    #[test]
+    fn get_single_entry() {
+        let db = Db::new(":memory:").unwrap();
+        db.initialize().unwrap();
+
+        let time = Utc::now().timestamp();
+        let v1 = Vault {
+            id: None,
+            name: String::from("Work"),
+            desc: Some(String::from("My Work Account")),
+            created_at: time,
+            updated_at: time,
+        };
+        db.add_vault(&v1).unwrap();
+
+        let e = Entry {
+            id: None,
+            access_key: String::from("ansible"),
+            access_token: String::from("TOPSCERETpassWord23123214"),
+            token_type: String::from("SSH"),
+            desc: None,
+            created_at: time,
+            updated_at: time,
+            vault_id: 1,
+        };
+        db.add_entry(&e).unwrap();
+        let entry = db.get_entry(1).unwrap();
+        assert_eq!(1, entry.vault_id);
+        assert_eq!(e.access_key, entry.access_key);
+        assert_eq!(e.access_token, entry.access_token);
+        assert_eq!(e.token_type, entry.token_type);
     }
 }
