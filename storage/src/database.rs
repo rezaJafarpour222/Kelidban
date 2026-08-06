@@ -2,20 +2,20 @@ use chrono::Utc;
 use rusqlite::{Connection, Result};
 
 pub struct Vault {
-    pub id: i64,
+    pub id: Option<i64>,
     pub name: String,
     pub desc: Option<String>,
-    pub created_at: i64,
-    pub updated_at: i64,
+    pub created_at: Option<i64>,
+    pub updated_at: Option<i64>,
 }
-
+#[derive(Debug)]
 pub struct Entry {
-    pub id: i64,
+    pub id: Option<i64>,
     pub access_key: String,
     pub access_token: String,
     pub token_type: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: Option<i64>,
+    pub updated_at: Option<i64>,
 }
 
 pub struct Db {
@@ -58,14 +58,14 @@ impl Db {
         )?;
         Ok(())
     }
-    pub fn add_new_vault(&self, name: &str, desc: Option<&str>) -> Result<()> {
+    pub fn add_new_vault(&self, vault: &Vault) -> Result<()> {
         let time = Utc::now().timestamp();
         self.conn.execute(
             "
             INSERT INTO vaults (name, desc, created_at, updated_at)
             VALUES(?1,?2,?3,?4)
             ",
-            (name, desc, &time, &time),
+            (&vault.name, &vault.desc, &time, &time),
         )?;
         Ok(())
     }
@@ -91,10 +91,34 @@ impl Db {
         }
         Ok(result)
     }
+
+    pub fn get_entries_from_vault(&self, vault_id: i64) -> Result<Vec<Entry>> {
+        let mut stmt = self
+            .conn
+            .prepare(" SELECT * FROM entries WHERE vault_id =?1 ")?;
+
+        let entries = stmt.query_map([vault_id], |row| {
+            Ok(Entry {
+                id: row.get(0)?,
+                access_key: row.get(1)?,
+                access_token: row.get(2)?,
+                token_type: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        })?;
+        let mut result = Vec::new();
+        for e in entries {
+            result.push(e?);
+        }
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::string;
+
     use super::*;
 
     #[test]
@@ -116,8 +140,24 @@ mod tests {
     fn test_multiple_vaults() {
         let db = Db::new(":memory:").unwrap();
         db.initialize().unwrap();
-        db.add_new_vault("Personal", None).unwrap();
-        db.add_new_vault("Work", None).unwrap();
+
+        let v1 = Vault {
+            id: None,
+            name: String::from("Personal"),
+            desc: Some(String::from("My Personal Account")),
+            created_at: None,
+            updated_at: None,
+        };
+
+        let v2 = Vault {
+            id: None,
+            name: String::from("Work"),
+            desc: Some(String::from("My Work Account")),
+            created_at: None,
+            updated_at: None,
+        };
+        db.add_new_vault(&v1).unwrap();
+        db.add_new_vault(&v2).unwrap();
         let vaults = db.get_vaults().unwrap();
 
         assert_eq!(vaults.len(), 2);
@@ -129,10 +169,16 @@ mod tests {
     fn test_vault_with_description() {
         let db = Db::new(":memory:").unwrap();
         db.initialize().unwrap();
-        db.add_new_vault("Personal", Some("My personal accounts"))
-            .unwrap();
+        let v = Vault {
+            id: None,
+            name: String::from("Personal"),
+            desc: Some(String::from("My Personal Account")),
+            created_at: None,
+            updated_at: None,
+        };
+        db.add_new_vault(&v).unwrap();
         let vaults = db.get_vaults().unwrap();
-        assert_eq!(vaults[0].desc, Some("My personal accounts".to_string()));
+        assert_eq!(vaults[0].desc, Some("My Personal Account".to_string()));
     }
 
     #[test]
