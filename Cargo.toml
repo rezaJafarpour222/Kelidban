@@ -1,5 +1,5 @@
 [workspace]
 members =[
-"cli", "storage", 
+"cli", "encryption", 
 ]
 resolver ="3"
