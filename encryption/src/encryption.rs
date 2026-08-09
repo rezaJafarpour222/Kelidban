@@ -62,6 +62,7 @@ pub struct VaultFile {
 impl VaultFile {
     pub fn serialize(&self) -> Vec<u8> {
         let mut output = Vec::new();
+        // Magic word
         output.extend_from_slice(b"KVLT");
         output.push(1);
         output.extend_from_slice(&self.salt);
@@ -69,5 +70,33 @@ impl VaultFile {
         output.extend_from_slice(&self.cipherText);
 
         output
+    }
+    pub fn deserialize(data: Vec<u8>) -> Result<Self, String> {
+        //NOTE: 4 bytes magic word
+        // 1 byte version
+        // 16 bytes salt
+        // 12 bytes nonce
+        // at least 16 bytes GCM tags
+        // => 4+1+16+12+16=49
+
+        if data.len() < 49 {
+            return Err("vault file is too small".to_string());
+        }
+        if &data[0..4] != b"KVLT" {
+            return Err("invalid vault file".to_string());
+        }
+        let version = data[4];
+        if version != 1 {
+            return Err("unsupported vault version".to_string());
+        }
+        let salt: [u8; 16] = data[5..21].try_into().unwrap();
+        let nonce: [u8; 12] = data[21..33].try_into().unwrap();
+        let cipher = data[33..].to_vec();
+
+        Ok(Self {
+            salt,
+            nonce,
+            cipherText: cipher,
+        })
     }
 }
