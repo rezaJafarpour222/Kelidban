@@ -1,4 +1,5 @@
 use argon2::{Algorithm, Argon2, Params, Version};
+use rand::Rng;
 pub fn derive_key(password: &[u8], salt: &[u8]) -> [u8; 32] {
     let params = Params::new(
         512 * 1024, // Ram in MIB
@@ -15,4 +16,9 @@ pub fn derive_key(password: &[u8], salt: &[u8]) -> [u8; 32] {
         .expect("Argon2 failed.");
 
     key
+}
+pub fn generate_salt() -> [u8; 16] {
+    let mut salt = [0u8; 16];
+    rand::rng().fill_bytes(&mut salt);
+    salt
 }
