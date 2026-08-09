@@ -52,3 +52,22 @@ pub fn decrypt(
 
     cipher.decrypt(&nonce, ciphertext)
 }
+
+pub struct VaultFile {
+    pub salt: [u8; 16],
+    pub nonce: [u8; 12],
+    pub cipherText: Vec<u8>,
+}
+
+impl VaultFile {
+    pub fn serialize(&self) -> Vec<u8> {
+        let mut output = Vec::new();
+        output.extend_from_slice(b"KVLT");
+        output.push(1);
+        output.extend_from_slice(&self.salt);
+        output.extend_from_slice(&self.nonce);
+        output.extend_from_slice(&self.cipherText);
+
+        output
+    }
+}
