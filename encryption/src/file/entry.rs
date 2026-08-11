@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::file::record::{RecordType, TlvRecord};
+use crate::file::record::TlvRecord;
 
 #[derive(Debug, Clone)]
 pub struct Entry {
@@ -12,6 +12,9 @@ impl Entry {
         Self {
             records: Vec::new(),
         }
+    }
+    pub fn records(&self) -> &[TlvRecord] {
+        &self.records
     }
     pub fn add_record(&mut self, record: TlvRecord) {
         self.records.push(record);
@@ -38,18 +41,24 @@ impl Entry {
     }
 }
 
-#[test]
-fn entry_roundtrip() {
-    let mut entry = Entry::new();
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file::record::RecordType;
 
-    entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+    #[test]
+    fn entry_roundtrip() {
+        let mut entry = Entry::new();
 
-    entry.add_record(TlvRecord::new(RecordType::Username, b"user123".to_vec()));
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
 
-    let bytes = entry.serialize();
+        entry.add_record(TlvRecord::new(RecordType::Username, b"user123".to_vec()));
 
-    let decoded = Entry::deserialize(&bytes).unwrap();
-    assert_eq!(decoded.records.len(), 2);
-    assert_eq!(decoded.records[0].record_type, RecordType::Title);
-    assert_eq!(decoded.records[1].record_type, RecordType::Username);
+        let bytes = entry.serialize();
+
+        let decoded = Entry::deserialize(&bytes).unwrap();
+        assert_eq!(decoded.records.len(), 2);
+        assert_eq!(decoded.records[0].record_type, RecordType::Title);
+        assert_eq!(decoded.records[1].record_type, RecordType::Username);
+    }
 }
