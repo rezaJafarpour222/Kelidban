@@ -29,12 +29,12 @@ pub fn encrypt(
     plaintext: &[u8],
 ) -> Result<(Vec<u8>, [u8; 12]), aes_gcm::Error> {
     let key =
-        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("key must be exactly 32 bytes");
+        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("key must be exactly 32 bytes.");
     let cipher = Aes256Gcm::new(&key);
 
     let mut nonce_bytes = [0u8; 12];
     rand::rng().fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("nonce must be exactly 12 bytes");
+    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("nonce must be exactly 12 bytes.");
 
     let ciphertext = cipher.encrypt(&nonce, plaintext)?;
     Ok((ciphertext, nonce_bytes))
@@ -46,9 +46,9 @@ pub fn decrypt(
     ciphertext: &[u8],
 ) -> Result<Vec<u8>, aes_gcm::Error> {
     let key =
-        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("key must be exactly 32 bytes");
+        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("key must be exactly 32 bytes.");
     let cipher = Aes256Gcm::new(&key);
-    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("nonce must be exactly 12 bytes");
+    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("nonce must be exactly 12 bytes.");
 
     cipher.decrypt(&nonce, ciphertext)
 }
@@ -80,14 +80,14 @@ impl VaultFile {
         // => 4+1+16+12+16=49
 
         if data.len() < 49 {
-            return Err("vault file is too small".to_string());
+            return Err("vault file is too small.".to_string());
         }
         if &data[0..4] != b"KVLT" {
-            return Err("invalid vault file".to_string());
+            return Err("invalid vault file.".to_string());
         }
         let version = data[4];
         if version != 1 {
-            return Err("unsupported vault version".to_string());
+            return Err("unsupported vault version.".to_string());
         }
         let salt: [u8; 16] = data[5..21].try_into().unwrap();
         let nonce: [u8; 12] = data[21..33].try_into().unwrap();
