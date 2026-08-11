@@ -15,9 +15,9 @@ pub struct FileHeader {
     argon_iterations: u32,
     argon_parallelism: u32,
     salt: [u8; 32],
-    header_nonce: [u8; 12],
-    data_nonce: [u8; 12],
+    nonce: [u8; 12],
 }
+
 /*
  Encoding:
  Binary
@@ -32,13 +32,12 @@ pub struct FileHeader {
  14         4        argon_iterations
  18         4        argon_parallelism
  22         32       salt
- 54         12       header_nonce
  66         12       data_nonce
 ------------------------------
-78 bytes total
+66 bytes total
 */
 impl FileHeader {
-    pub const SIZE: usize = 78;
+    pub const SIZE: usize = 66;
     pub fn new() -> Self {
         Self {
             magic: MAGIC,
@@ -49,8 +48,7 @@ impl FileHeader {
             argon_iterations: 3,
             argon_parallelism: 2,
             salt: [0u8; 32],
-            header_nonce: [0u8; 12],
-            data_nonce: [0u8; 12],
+            nonce: [0u8; 12],
         }
     }
     pub fn serialize(&self) -> [u8; Self::SIZE] {
@@ -80,10 +78,7 @@ impl FileHeader {
         buffer[offset..offset + 32].copy_from_slice(&self.salt);
         offset += 32;
 
-        buffer[offset..offset + 12].copy_from_slice(&self.header_nonce);
-        offset += 12;
-
-        buffer[offset..offset + 12].copy_from_slice(&self.data_nonce);
+        buffer[offset..offset + 12].copy_from_slice(&self.nonce);
 
         buffer
     }
@@ -138,12 +133,8 @@ impl FileHeader {
         salt.copy_from_slice(&bytes[offset..offset + 32]);
         offset += 32;
 
-        let mut header_nonce = [0u8; 12];
-        header_nonce.copy_from_slice(&bytes[offset..offset + 12]);
-        offset += 12;
-
-        let mut data_nonce = [0u8; 12];
-        data_nonce.copy_from_slice(&bytes[offset..offset + 12]);
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&bytes[offset..offset + 12]);
 
         Ok(Self {
             magic,
@@ -154,8 +145,7 @@ impl FileHeader {
             argon_iterations,
             argon_parallelism,
             salt,
-            header_nonce,
-            data_nonce,
+            nonce,
         })
     }
     pub fn version(&self) -> String {
@@ -174,7 +164,6 @@ mod tests {
         let bytes = header.serialize();
 
         assert_eq!(bytes.len(), FileHeader::SIZE);
-        assert_eq!(bytes.len(), 78);
     }
 
     #[test]
@@ -195,8 +184,7 @@ mod tests {
         assert_eq!(decoded.argon_parallelism, header.argon_parallelism);
 
         assert_eq!(decoded.salt, header.salt);
-        assert_eq!(decoded.header_nonce, header.header_nonce);
-        assert_eq!(decoded.data_nonce, header.data_nonce);
+        assert_eq!(decoded.nonce, header.nonce);
     }
 
     #[test]

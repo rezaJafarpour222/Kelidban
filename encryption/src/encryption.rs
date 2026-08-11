@@ -56,7 +56,7 @@ pub fn decrypt(
 pub struct VaultFile {
     pub salt: [u8; 16],
     pub nonce: [u8; 12],
-    pub cipherText: Vec<u8>,
+    pub cipher_text: Vec<u8>,
 }
 
 impl VaultFile {
@@ -67,7 +67,7 @@ impl VaultFile {
         output.push(1);
         output.extend_from_slice(&self.salt);
         output.extend_from_slice(&self.nonce);
-        output.extend_from_slice(&self.cipherText);
+        output.extend_from_slice(&self.cipher_text);
 
         output
     }
@@ -96,7 +96,7 @@ impl VaultFile {
         Ok(Self {
             salt,
             nonce,
-            cipherText: cipher,
+            cipher_text: cipher,
         })
     }
 }
