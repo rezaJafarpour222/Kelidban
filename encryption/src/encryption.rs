@@ -71,7 +71,7 @@ impl VaultFile {
 
         output
     }
-    pub fn deserialize(data: Vec<u8>) -> Result<Self, String> {
+    pub fn deserialize(data: &[u8]) -> Result<Self, String> {
         //NOTE: 4 bytes magic word
         // 1 byte version
         // 16 bytes salt

@@ -2,7 +2,7 @@ use std::fs;
 
 use encryption::{
     database::{Entry, Vault},
-    encryption::{VaultFile, decrypt, derive_key, encrypt, generate_salt},
+    encryption::{VaultFile, derive_key, encrypt, generate_salt},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -49,5 +49,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vault_bytes = vault.serialize();
 
     std::fs::write("vault.enc", vault_bytes)?;
+
+    let file_bytes = std::fs::read("vault.enc")?;
+
+    let restored_vault = VaultFile::deserialize(&file_bytes)?;
+
+    println!("Salt:       {:02x?}", restored_vault.salt);
+    println!("Nonce:      {:02x?}", restored_vault.nonce);
+    println!("Ciphertext: {} bytes", restored_vault.cipherText.len());
     Ok(())
 }
