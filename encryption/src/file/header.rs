@@ -1,14 +1,12 @@
-//NOTE: FILE FORMAT CRATE
-
 use std::io;
 
-const MAGIC: [u8; 4] = *b"KDPR";
+const MAGIC: [u8; 4] = *b"KDBR";
 const VERSION_MAJOR: u16 = 1;
 const VERSION_MINOR: u16 = 0;
-const FLAG: u16 = 0;
+const FLAGS: u16 = 0;
 
 #[derive(Debug)]
-struct FileHeader {
+pub struct FileHeader {
     magic: [u8; 4],
     version_major: u16,
     version_minor: u16,
@@ -20,24 +18,25 @@ struct FileHeader {
     header_nonce: [u8; 12],
     data_nonce: [u8; 12],
 }
-// Encoding:
-// Binary
-// All integers are little-endian
-// Offset     Size     Field
-// --------------------------------
-// 0          4        magic
-// 4          2        version_major
-// 6          2        version_minor
-// 8          2        flags
-// 10         4        argon_memory
-// 14         4        argon_iterations
-// 18         4        argon_parallelism
-// 22         32       salt
-// 54         12       header_nonce
-// 66         12       data_nonce
-// --------------------------------
-// 78 bytes total
-
+/*
+ Encoding:
+ Binary
+ All integers are little-endian
+ Offset     Size     Field
+ --------------------------------
+ 0          4        magic
+ 4          2        version_major
+ 6          2        version_minor
+ 8          2        flags
+ 10         4        argon_memory
+ 14         4        argon_iterations
+ 18         4        argon_parallelism
+ 22         32       salt
+ 54         12       header_nonce
+ 66         12       data_nonce
+------------------------------
+78 bytes total
+*/
 impl FileHeader {
     pub const SIZE: usize = 78;
     pub fn new() -> Self {
@@ -45,7 +44,7 @@ impl FileHeader {
             magic: MAGIC,
             version_major: VERSION_MAJOR,
             version_minor: VERSION_MINOR,
-            flags: FLAG,
+            flags: FLAGS,
             argon_memory: 262144, // 256 * 1024
             argon_iterations: 3,
             argon_parallelism: 2,
@@ -88,7 +87,7 @@ impl FileHeader {
 
         buffer
     }
-    pub fn deserialize(bytes: [u8; Self::SIZE]) -> io::Result<Self> {
+    pub fn deserialize(bytes: &[u8]) -> io::Result<Self> {
         if bytes.len() != Self::SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -109,11 +108,22 @@ impl FileHeader {
         let version_major = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
         offset += 2;
 
+        if version_major != VERSION_MAJOR {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "invalid version",
+            ));
+        }
+
         let version_minor = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
         offset += 2;
 
         let flags = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
         offset += 2;
+
+        if flags != FLAGS {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "unknown flags"));
+        }
 
         let argon_memory = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
         offset += 4;
@@ -123,10 +133,6 @@ impl FileHeader {
 
         let argon_parallelism = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
         offset += 4;
-
-        let mut salt = [0u8; 32];
-        salt.copy_from_slice(&bytes[offset..offset + 32]);
-        offset += 32;
 
         let mut salt = [0u8; 32];
         salt.copy_from_slice(&bytes[offset..offset + 32]);
@@ -151,5 +157,87 @@ impl FileHeader {
             header_nonce,
             data_nonce,
         })
+    }
+    pub fn version(&self) -> String {
+        let version = format!("{}:{}", self.version_major, self.version_minor);
+        version
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_header_size() {
+        let header = FileHeader::new();
+
+        let bytes = header.serialize();
+
+        assert_eq!(bytes.len(), FileHeader::SIZE);
+        assert_eq!(bytes.len(), 78);
+    }
+
+    #[test]
+    fn test_header_conversion() {
+        let header = FileHeader::new();
+
+        let bytes = header.serialize();
+
+        let decoded = FileHeader::deserialize(&bytes).expect("failed to deserialize header");
+
+        assert_eq!(decoded.magic, header.magic);
+        assert_eq!(decoded.version_major, header.version_major);
+        assert_eq!(decoded.version_minor, header.version_minor);
+        assert_eq!(decoded.flags, header.flags);
+
+        assert_eq!(decoded.argon_memory, header.argon_memory);
+        assert_eq!(decoded.argon_iterations, header.argon_iterations);
+        assert_eq!(decoded.argon_parallelism, header.argon_parallelism);
+
+        assert_eq!(decoded.salt, header.salt);
+        assert_eq!(decoded.header_nonce, header.header_nonce);
+        assert_eq!(decoded.data_nonce, header.data_nonce);
+    }
+
+    #[test]
+    fn test_invalid_magic() {
+        let mut bytes = FileHeader::new().serialize();
+
+        bytes[0] = b'X';
+
+        let result = FileHeader::deserialize(&bytes);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_version() {
+        let mut bytes = FileHeader::new().serialize();
+
+        // version_major is at offset 4
+        bytes[4] = 2;
+
+        let result = FileHeader::deserialize(&bytes);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_flags() {
+        let mut bytes = FileHeader::new().serialize();
+
+        // flags are at offset 8
+        bytes[8] = 1;
+
+        let result = FileHeader::deserialize(&bytes);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_version_string() {
+        let header = FileHeader::new();
+
+        assert_eq!(header.version(), "1:0");
     }
 }
