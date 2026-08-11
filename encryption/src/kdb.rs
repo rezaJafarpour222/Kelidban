@@ -1,5 +1,7 @@
 //NOTE: FILE FORMAT CRATE
 
+use std::io;
+
 const MAGIC: [u8; 4] = *b"KDPR";
 const VERSION_MAJOR: u16 = 1;
 const VERSION_MINOR: u16 = 0;
@@ -85,5 +87,69 @@ impl FileHeader {
         buffer[offset..offset + 12].copy_from_slice(&self.data_nonce);
 
         buffer
+    }
+    pub fn deserialize(bytes: [u8; Self::SIZE]) -> io::Result<Self> {
+        if bytes.len() != Self::SIZE {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "invalid header size",
+            ));
+        }
+
+        let mut offset = 0;
+        let mut magic = [0u8; 4];
+
+        magic.copy_from_slice(&bytes[offset..offset + 4]);
+        offset += 4;
+
+        if magic != MAGIC {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "invalid magic"));
+        }
+
+        let version_major = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
+        offset += 2;
+
+        let version_minor = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
+        offset += 2;
+
+        let flags = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
+        offset += 2;
+
+        let argon_memory = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+        offset += 4;
+
+        let argon_iterations = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+        offset += 4;
+
+        let argon_parallelism = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+        offset += 4;
+
+        let mut salt = [0u8; 32];
+        salt.copy_from_slice(&bytes[offset..offset + 32]);
+        offset += 32;
+
+        let mut salt = [0u8; 32];
+        salt.copy_from_slice(&bytes[offset..offset + 32]);
+        offset += 32;
+
+        let mut header_nonce = [0u8; 12];
+        header_nonce.copy_from_slice(&bytes[offset..offset + 12]);
+        offset += 12;
+
+        let mut data_nonce = [0u8; 12];
+        data_nonce.copy_from_slice(&bytes[offset..offset + 12]);
+
+        Ok(Self {
+            magic,
+            version_major,
+            version_minor,
+            flags,
+            argon_memory,
+            argon_iterations,
+            argon_parallelism,
+            salt,
+            header_nonce,
+            data_nonce,
+        })
     }
 }
