@@ -1,6 +1,6 @@
+use crate::file::record::{RecordType, TlvRecord};
 use std::io;
-
-use crate::file::record::TlvRecord;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct Entry {
@@ -9,9 +9,16 @@ pub struct Entry {
 
 impl Entry {
     pub fn new() -> Self {
-        Self {
+        let uuid = Uuid::new_v4();
+        let mut entry = Self {
             records: Vec::new(),
-        }
+        };
+        entry.add_record(TlvRecord::new(
+            super::record::RecordType::Uuid,
+            uuid.as_bytes().to_vec(),
+        ));
+
+        entry
     }
     pub fn records(&self) -> &[TlvRecord] {
         &self.records
@@ -39,6 +46,16 @@ impl Entry {
 
         Ok(Self { records })
     }
+    pub fn uuid(&self) -> io::Result<Uuid> {
+        let record = self
+            .records
+            .iter()
+            .find(|record| record.record_type == RecordType::Uuid)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "entry has no UUID."))?;
+
+        Uuid::from_slice(&record.value)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid UUID."))
+    }
 }
 
 #[cfg(test)]
@@ -54,11 +71,42 @@ mod tests {
 
         entry.add_record(TlvRecord::new(RecordType::Username, b"user123".to_vec()));
 
+        let uuid = entry.uuid().unwrap();
+
         let bytes = entry.serialize();
 
         let decoded = Entry::deserialize(&bytes).unwrap();
-        assert_eq!(decoded.records.len(), 2);
-        assert_eq!(decoded.records[0].record_type, RecordType::Title);
-        assert_eq!(decoded.records[1].record_type, RecordType::Username);
+
+        assert_eq!(decoded.records.len(), 3);
+        assert_eq!(decoded.records[0].record_type, RecordType::Uuid);
+        assert_eq!(decoded.records[1].record_type, RecordType::Title);
+        assert_eq!(decoded.records[2].record_type, RecordType::Username);
+
+        assert_eq!(decoded.uuid().unwrap(), uuid);
+    }
+    #[test]
+    fn entry_has_uuid() {
+        let entry = Entry::new();
+
+        let uuid_record = entry
+            .records()
+            .iter()
+            .find(|record| record.record_type == RecordType::Uuid);
+
+        assert!(uuid_record.is_some());
+
+        let uuid_record = uuid_record.unwrap();
+
+        assert_eq!(uuid_record.value.len(), 16);
+    }
+    #[test]
+    fn entry_uuid_is_unique() {
+        let entry1 = Entry::new();
+        let entry2 = Entry::new();
+
+        let uuid1 = entry1.uuid().unwrap();
+        let uuid2 = entry2.uuid().unwrap();
+
+        assert_ne!(uuid1, uuid2);
     }
 }

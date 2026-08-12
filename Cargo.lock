@@ -586,6 +586,7 @@ dependencies = [
  "chrono",
  "jalali-calendar",
  "rand 0.10.2",
+ "uuid",
 ]
 
 [[package]]

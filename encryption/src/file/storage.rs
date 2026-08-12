@@ -1,7 +1,7 @@
 use std::{fs, io, path::Path};
 
 use crate::{
-    encryption::{decrypt, derive_key, encrypt},
+    encryption::{derive_key, encrypt},
     file::{header::FileHeader, vault::Vault},
 };
 
@@ -91,11 +91,13 @@ mod tests {
 
         let entry = &decrypted.entries()[0];
 
-        assert_eq!(entry.records().len(), 2);
+        assert_eq!(entry.records().len(), 3);
 
-        assert_eq!(entry.records()[0].record_type, RecordType::Title);
+        assert_eq!(entry.records()[0].record_type, RecordType::Uuid);
 
-        assert_eq!(entry.records()[1].record_type, RecordType::Username);
+        assert_eq!(entry.records()[1].record_type, RecordType::Title);
+
+        assert_eq!(entry.records()[2].record_type, RecordType::Username);
     }
     #[test]
     fn wrong_password_fails() {
@@ -160,10 +162,15 @@ mod tests {
         assert_eq!(loaded.entries().len(), 1);
         assert_eq!(
             loaded.entries()[0].records()[0].record_type,
+            RecordType::Uuid
+        );
+
+        assert_eq!(
+            loaded.entries()[0].records()[1].record_type,
             RecordType::Title
         );
 
-        std::fs::remove_file(path).unwrap();
+        let _ = std::fs::remove_file(path);
     }
     #[test]
     fn load_with_wrong_password_fails() {
@@ -202,19 +209,16 @@ mod tests {
 
         save_vault(path, password, &vault).unwrap();
 
-        // Read the complete file.
         let mut data = std::fs::read(path).unwrap();
 
-        // Remove the last byte.
         data.pop();
 
-        // Write the damaged file back.
         std::fs::write(path, data).unwrap();
 
         let result = load_vault(path, password);
 
         assert!(result.is_err());
 
-        std::fs::remove_file(path).unwrap();
+        let _ = std::fs::remove_file(path);
     }
 }
