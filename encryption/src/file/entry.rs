@@ -171,7 +171,7 @@ mod tests {
         assert_ne!(uuid1, uuid2);
     }
     #[test]
-    fn entry_title() {
+    fn entry_field_getters() {
         let entry = Entry::from_fields(
             "GitHub",
             "user123",
@@ -181,5 +181,9 @@ mod tests {
         );
 
         assert_eq!(entry.title(), Some(b"GitHub".as_slice()));
+        assert_eq!(entry.username(), Some(b"user123".as_slice()));
+        assert_eq!(entry.password(), Some(b"secret".as_slice()));
+        assert_eq!(entry.url(), Some(b"https://github.com".as_slice()));
+        assert_eq!(entry.notes(), Some(b"My GitHub account".as_slice()));
     }
 }
