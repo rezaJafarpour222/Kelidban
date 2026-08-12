@@ -1,7 +1,7 @@
-use std::io;
+use std::{fs, io, path::Path};
 
 use crate::{
-    encryption::{derive_key, encrypt},
+    encryption::{decrypt, derive_key, encrypt},
     file::{header::FileHeader, vault::Vault},
 };
 
@@ -22,4 +22,122 @@ pub fn encrypt_vault(password: &[u8], header: &FileHeader, vault: &Vault) -> io:
     output.extend_from_slice(&ciphertext);
 
     Ok(output)
+}
+pub fn decrypt_vault(password: &[u8], data: &[u8]) -> io::Result<Vault> {
+    if data.len() < FileHeader::SIZE {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "vault file is too small.",
+        ));
+    }
+    let header_bytes = &data[..FileHeader::SIZE];
+    let ciphertext = &data[FileHeader::SIZE..];
+
+    let header = FileHeader::deserialize(header_bytes)?;
+    let key = derive_key(
+        password,
+        &header.salt,
+        header.argon_memory,
+        header.argon_iterations,
+        header.argon_parallelism,
+    );
+
+    let plaintext = crate::encryption::decrypt(&key, &header.nonce, ciphertext)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "failed to decrypt vault."))?;
+
+    Vault::deserialize(&plaintext)
+}
+pub fn save_vault<P: AsRef<Path>>(path: P, password: &[u8], vault: &Vault) -> io::Result<()> {
+    let header = FileHeader::new();
+    let data = encrypt_vault(password, &header, vault)?;
+
+    fs::write(path, data)?;
+
+    Ok(())
+}
+
+pub fn load_vault<P: AsRef<Path>>(path: P, password: &[u8]) -> io::Result<Vault> {
+    let data = fs::read(path)?;
+    decrypt_vault(password, &data)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file::entry::Entry;
+    use crate::file::record::{RecordType, TlvRecord};
+
+    #[test]
+    fn vault_encrypt_decrypt_roundtrip() {
+        let password = b"test-password";
+
+        let mut vault = Vault::new();
+
+        let mut entry = Entry::new();
+
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        entry.add_record(TlvRecord::new(RecordType::Username, b"user123".to_vec()));
+
+        vault.add_entry(entry);
+
+        let header = FileHeader::new();
+
+        let encrypted = encrypt_vault(password, &header, &vault).unwrap();
+
+        let decrypted = decrypt_vault(password, &encrypted).unwrap();
+
+        assert_eq!(decrypted.entries().len(), 1);
+
+        let entry = &decrypted.entries()[0];
+
+        assert_eq!(entry.records().len(), 2);
+
+        assert_eq!(entry.records()[0].record_type, RecordType::Title);
+
+        assert_eq!(entry.records()[1].record_type, RecordType::Username);
+    }
+    #[test]
+    fn wrong_password_fails() {
+        let correct_password = b"correct-password";
+        let wrong_password = b"wrong-password";
+
+        let mut vault = Vault::new();
+
+        let mut entry = Entry::new();
+
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        vault.add_entry(entry);
+
+        let header = FileHeader::new();
+
+        let encrypted = encrypt_vault(correct_password, &header, &vault).unwrap();
+
+        let result = decrypt_vault(wrong_password, &encrypted);
+
+        assert!(result.is_err());
+    }
+    #[test]
+    fn tampered_ciphertext_fails() {
+        let password = b"correct-password";
+
+        let mut vault = Vault::new();
+
+        let mut entry = Entry::new();
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        vault.add_entry(entry);
+
+        let header = FileHeader::new();
+
+        let mut encrypted = encrypt_vault(password, &header, &vault).unwrap();
+
+        // Change one byte in the ciphertext.
+        encrypted[FileHeader::SIZE] ^= 1;
+
+        let result = decrypt_vault(password, &encrypted);
+
+        assert!(result.is_err());
+    }
 }
