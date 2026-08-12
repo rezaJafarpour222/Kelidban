@@ -46,16 +46,6 @@ impl Entry {
 
         Ok(Self { records })
     }
-    pub fn uuid(&self) -> io::Result<Uuid> {
-        let record = self
-            .records
-            .iter()
-            .find(|record| record.record_type == RecordType::Uuid)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "entry has no UUID."))?;
-
-        Uuid::from_slice(&record.value)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid UUID."))
-    }
     pub fn from_fields(
         title: &str,
         username: &str,
@@ -82,6 +72,50 @@ impl Entry {
         entry.add_record(TlvRecord::new(RecordType::Notes, notes.as_bytes().to_vec()));
 
         entry
+    }
+
+    pub fn uuid(&self) -> io::Result<Uuid> {
+        let record = self
+            .records
+            .iter()
+            .find(|record| record.record_type == RecordType::Uuid)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "entry has no UUID."))?;
+
+        Uuid::from_slice(&record.value)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid UUID."))
+    }
+    pub fn title(&self) -> Option<&[u8]> {
+        self.records
+            .iter()
+            .find(|record| record.record_type == RecordType::Title)
+            .map(|record| record.value.as_slice())
+    }
+    pub fn username(&self) -> Option<&[u8]> {
+        self.records
+            .iter()
+            .find(|record| record.record_type == RecordType::Username)
+            .map(|record| record.value.as_slice())
+    }
+
+    pub fn password(&self) -> Option<&[u8]> {
+        self.records
+            .iter()
+            .find(|record| record.record_type == RecordType::Password)
+            .map(|record| record.value.as_slice())
+    }
+
+    pub fn url(&self) -> Option<&[u8]> {
+        self.records
+            .iter()
+            .find(|record| record.record_type == RecordType::Url)
+            .map(|record| record.value.as_slice())
+    }
+
+    pub fn notes(&self) -> Option<&[u8]> {
+        self.records
+            .iter()
+            .find(|record| record.record_type == RecordType::Notes)
+            .map(|record| record.value.as_slice())
     }
 }
 
@@ -135,5 +169,17 @@ mod tests {
         let uuid2 = entry2.uuid().unwrap();
 
         assert_ne!(uuid1, uuid2);
+    }
+    #[test]
+    fn entry_title() {
+        let entry = Entry::from_fields(
+            "GitHub",
+            "user123",
+            "secret",
+            "https://github.com",
+            "My GitHub account",
+        );
+
+        assert_eq!(entry.title(), Some(b"GitHub".as_slice()));
     }
 }

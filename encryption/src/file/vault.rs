@@ -63,6 +63,18 @@ impl Vault {
     pub fn add_entry(&mut self, entry: Entry) {
         self.entries.push(entry);
     }
+    pub fn add_entry_from_fields(
+        &mut self,
+        title: &str,
+        username: &str,
+        password: &str,
+        url: &str,
+        notes: &str,
+    ) {
+        let entry = Entry::from_fields(title, username, password, url, notes);
+
+        self.add_entry(entry);
+    }
     pub fn entries(&self) -> &[Entry] {
         &self.entries
     }
@@ -247,5 +259,33 @@ mod tests {
 
         assert_eq!(entry.records()[5].record_type, RecordType::Notes);
         assert_eq!(entry.records()[5].value, b"My GitHub account");
+    }
+
+    #[test]
+    fn vault_add_entry_from_fields() {
+        let mut vault = Vault::new();
+
+        vault.add_entry_from_fields(
+            "GitHub",
+            "user123",
+            "secret",
+            "https://github.com",
+            "My GitHub account",
+        );
+
+        assert_eq!(vault.entries().len(), 1);
+
+        let entry = &vault.entries()[0];
+
+        assert_eq!(entry.records().len(), 6);
+
+        assert_eq!(entry.records()[1].record_type, RecordType::Title);
+        assert_eq!(entry.records()[1].value, b"GitHub");
+
+        assert_eq!(entry.records()[2].record_type, RecordType::Username);
+        assert_eq!(entry.records()[2].value, b"user123");
+
+        assert_eq!(entry.records()[3].record_type, RecordType::Password);
+        assert_eq!(entry.records()[3].value, b"secret");
     }
 }
