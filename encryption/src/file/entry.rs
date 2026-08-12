@@ -55,25 +55,40 @@ impl Entry {
     ) -> Self {
         let mut entry = Self::new();
 
-        entry.add_record(TlvRecord::new(RecordType::Title, title.as_bytes().to_vec()));
-
-        entry.add_record(TlvRecord::new(
-            RecordType::Username,
-            username.as_bytes().to_vec(),
-        ));
-
-        entry.add_record(TlvRecord::new(
-            RecordType::Password,
-            password.as_bytes().to_vec(),
-        ));
-
-        entry.add_record(TlvRecord::new(RecordType::Url, url.as_bytes().to_vec()));
-
-        entry.add_record(TlvRecord::new(RecordType::Notes, notes.as_bytes().to_vec()));
+        entry.set_title(title);
+        entry.set_username(username);
+        entry.set_password(password);
+        entry.set_url(url);
+        entry.set_notes(notes);
 
         entry
     }
-
+    fn set_field(&mut self, record_type: RecordType, value: &str) {
+        if let Some(record) = self
+            .records
+            .iter_mut()
+            .find(|record| record.record_type == record_type)
+        {
+            record.value = value.as_bytes().to_vec();
+            return;
+        }
+        self.add_record(TlvRecord::new(record_type, value.as_bytes().to_vec()));
+    }
+    pub fn set_title(&mut self, title: &str) {
+        self.set_field(RecordType::Title, title);
+    }
+    pub fn set_username(&mut self, username: &str) {
+        self.set_field(RecordType::Username, username);
+    }
+    pub fn set_password(&mut self, password: &str) {
+        self.set_field(RecordType::Password, password);
+    }
+    pub fn set_url(&mut self, url: &str) {
+        self.set_field(RecordType::Url, url);
+    }
+    pub fn set_notes(&mut self, notes: &str) {
+        self.set_field(RecordType::Notes, notes);
+    }
     pub fn uuid(&self) -> io::Result<Uuid> {
         let record = self
             .records
@@ -185,5 +200,31 @@ mod tests {
         assert_eq!(entry.password(), Some(b"secret".as_slice()));
         assert_eq!(entry.url(), Some(b"https://github.com".as_slice()));
         assert_eq!(entry.notes(), Some(b"My GitHub account".as_slice()));
+    }
+    #[test]
+    fn entry_set_fields() {
+        let mut entry = Entry::from_fields(
+            "GitHub",
+            "old-user",
+            "old-password",
+            "https://old.example",
+            "old notes",
+        );
+
+        let uuid = entry.uuid().unwrap();
+
+        entry.set_title("GitHub Personal");
+        entry.set_username("new-user");
+        entry.set_password("new-password");
+        entry.set_url("https://new.example");
+        entry.set_notes("new notes");
+
+        assert_eq!(entry.uuid().unwrap(), uuid);
+
+        assert_eq!(entry.title(), Some(b"GitHub Personal".as_slice()));
+        assert_eq!(entry.username(), Some(b"new-user".as_slice()));
+        assert_eq!(entry.password(), Some(b"new-password".as_slice()));
+        assert_eq!(entry.url(), Some(b"https://new.example".as_slice()));
+        assert_eq!(entry.notes(), Some(b"new notes".as_slice()));
     }
 }
