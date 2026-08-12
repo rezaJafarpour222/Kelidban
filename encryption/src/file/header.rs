@@ -1,5 +1,9 @@
 use std::io;
 
+use rand::Rng;
+
+use crate::encryption;
+
 const MAGIC: [u8; 4] = *b"KDBR";
 const VERSION_MAJOR: u16 = 1;
 const VERSION_MINOR: u16 = 0;
@@ -7,15 +11,15 @@ const FLAGS: u16 = 0;
 
 #[derive(Debug)]
 pub struct FileHeader {
-    magic: [u8; 4],
+    pub magic: [u8; 4],
     version_major: u16,
     version_minor: u16,
-    flags: u16,
-    argon_memory: u32,
-    argon_iterations: u32,
-    argon_parallelism: u32,
-    salt: [u8; 32],
-    nonce: [u8; 12],
+    pub flags: u16,
+    pub argon_memory: u32,
+    pub argon_iterations: u32,
+    pub argon_parallelism: u32,
+    pub salt: [u8; 32],
+    pub nonce: [u8; 12],
 }
 
 /*
@@ -39,6 +43,8 @@ pub struct FileHeader {
 impl FileHeader {
     pub const SIZE: usize = 66;
     pub fn new() -> Self {
+        let mut nonce = [0u8; 12];
+        rand::rng().fill_bytes(&mut nonce);
         Self {
             magic: MAGIC,
             version_major: VERSION_MAJOR,
@@ -47,8 +53,8 @@ impl FileHeader {
             argon_memory: 262144, // 256 * 1024
             argon_iterations: 3,
             argon_parallelism: 2,
-            salt: [0u8; 32],
-            nonce: [0u8; 12],
+            salt: encryption::generate_salt(),
+            nonce,
         }
     }
     pub fn serialize(&self) -> [u8; Self::SIZE] {
@@ -227,5 +233,12 @@ mod tests {
         let header = FileHeader::new();
 
         assert_eq!(header.version(), "1:0");
+    }
+    #[test]
+    fn test_random_values() {
+        let header = FileHeader::new();
+
+        assert_ne!(header.salt, [0u8; 32]);
+        assert_ne!(header.nonce, [0u8; 12]);
     }
 }

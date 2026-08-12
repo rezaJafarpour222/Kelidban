@@ -85,4 +85,23 @@ mod tests {
 
         assert_eq!(decoded.entries().len(), 1);
     }
+    #[test]
+    fn vault_multiple_entries_roundtrip() {
+        let mut vault = Vault::new();
+
+        let mut entry1 = Entry::new();
+        entry1.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        let mut entry2 = Entry::new();
+        entry2.add_record(TlvRecord::new(RecordType::Title, b"Bank".to_vec()));
+
+        vault.add_entry(entry1);
+        vault.add_entry(entry2);
+
+        let bytes = vault.serialize();
+
+        let decoded = Vault::deserialize(&bytes).unwrap();
+
+        assert_eq!(decoded.entries().len(), 2);
+    }
 }
