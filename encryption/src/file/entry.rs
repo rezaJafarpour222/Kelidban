@@ -56,6 +56,33 @@ impl Entry {
         Uuid::from_slice(&record.value)
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid UUID."))
     }
+    pub fn from_fields(
+        title: &str,
+        username: &str,
+        password: &str,
+        url: &str,
+        notes: &str,
+    ) -> Self {
+        let mut entry = Self::new();
+
+        entry.add_record(TlvRecord::new(RecordType::Title, title.as_bytes().to_vec()));
+
+        entry.add_record(TlvRecord::new(
+            RecordType::Username,
+            username.as_bytes().to_vec(),
+        ));
+
+        entry.add_record(TlvRecord::new(
+            RecordType::Password,
+            password.as_bytes().to_vec(),
+        ));
+
+        entry.add_record(TlvRecord::new(RecordType::Url, url.as_bytes().to_vec()));
+
+        entry.add_record(TlvRecord::new(RecordType::Notes, notes.as_bytes().to_vec()));
+
+        entry
+    }
 }
 
 #[cfg(test)]

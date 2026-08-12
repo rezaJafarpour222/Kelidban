@@ -219,4 +219,33 @@ mod tests {
         assert!(found.is_some());
         assert_eq!(found.unwrap().records()[1].value, b"GitHub");
     }
+    #[test]
+    fn entry_from_fields() {
+        let entry = Entry::from_fields(
+            "GitHub",
+            "user123",
+            "secret",
+            "https://github.com",
+            "My GitHub account",
+        );
+
+        assert_eq!(entry.records().len(), 6);
+
+        assert_eq!(entry.records()[0].record_type, RecordType::Uuid);
+
+        assert_eq!(entry.records()[1].record_type, RecordType::Title);
+        assert_eq!(entry.records()[1].value, b"GitHub");
+
+        assert_eq!(entry.records()[2].record_type, RecordType::Username);
+        assert_eq!(entry.records()[2].value, b"user123");
+
+        assert_eq!(entry.records()[3].record_type, RecordType::Password);
+        assert_eq!(entry.records()[3].value, b"secret");
+
+        assert_eq!(entry.records()[4].record_type, RecordType::Url);
+        assert_eq!(entry.records()[4].value, b"https://github.com");
+
+        assert_eq!(entry.records()[5].record_type, RecordType::Notes);
+        assert_eq!(entry.records()[5].value, b"My GitHub account");
+    }
 }
