@@ -115,6 +115,15 @@ impl Vault {
         }
         Ok(None)
     }
+    pub fn find_entry_mut(&mut self, uuid: Uuid) -> io::Result<Option<&mut Entry>> {
+        for entry in &mut self.entries {
+            if entry.uuid()? == uuid {
+                return Ok(Some(entry));
+            }
+        }
+
+        Ok(None)
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -287,5 +296,28 @@ mod tests {
 
         assert_eq!(entry.records()[3].record_type, RecordType::Password);
         assert_eq!(entry.records()[3].value, b"secret");
+    }
+    #[test]
+    fn find_entry_mut_by_uuid() {
+        let mut vault = Vault::new();
+
+        vault.add_entry_from_fields(
+            "GitHub",
+            "user123",
+            "secret",
+            "https://github.com",
+            "My GitHub account",
+        );
+
+        let uuid = vault.entries()[0].uuid().unwrap();
+
+        let entry = vault.find_entry_mut(uuid).unwrap().unwrap();
+
+        entry.set_title("GitHub Personal");
+
+        let entry = vault.find_entry(uuid).unwrap().unwrap();
+
+        assert_eq!(entry.uuid().unwrap(), uuid);
+        assert_eq!(entry.title(), Some(b"GitHub Personal".as_slice()));
     }
 }
