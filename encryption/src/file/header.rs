@@ -92,7 +92,7 @@ impl FileHeader {
         if bytes.len() != Self::SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "invalid header size",
+                "Invalid header size.",
             ));
         }
 
@@ -103,7 +103,7 @@ impl FileHeader {
         offset += 4;
 
         if magic != MAGIC {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "invalid magic"));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid magic."));
         }
 
         let version_major = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
@@ -123,7 +123,7 @@ impl FileHeader {
         offset += 2;
 
         if flags != FLAGS {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "unknown flags"));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unknown flags."));
         }
 
         let argon_memory = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
@@ -178,7 +178,7 @@ mod tests {
 
         let bytes = header.serialize();
 
-        let decoded = FileHeader::deserialize(&bytes).expect("failed to deserialize header");
+        let decoded = FileHeader::deserialize(&bytes).expect("Failed to deserialize header.");
 
         assert_eq!(decoded.magic, header.magic);
         assert_eq!(decoded.version_major, header.version_major);

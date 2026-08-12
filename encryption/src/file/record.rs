@@ -54,7 +54,7 @@ impl TlvRecord {
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "unknown record type.",
+                    "Unknown record type.",
                 ));
             }
         };
@@ -62,7 +62,7 @@ impl TlvRecord {
         if length > MAX_RECORD_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "record is too large.",
+                "Record is too large.",
             ));
         }
         if bytes.len() < 6 + length {

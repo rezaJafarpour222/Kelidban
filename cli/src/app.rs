@@ -1,6 +1,10 @@
-use std::io;
+use std::{io, path::Path};
 
-use encryption::file::{entry::Entry, vault::Vault};
+use encryption::file::{
+    entry::Entry,
+    storage::{load_vault, save_vault},
+    vault::Vault,
+};
 use uuid::Uuid;
 
 pub struct App {
@@ -42,7 +46,7 @@ impl App {
         let entry = self
             .vault
             .find_entry_mut(uuid)?
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "entry not found"))?;
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "entry not found."))?;
 
         entry.set_title(title);
         entry.set_username(username);
@@ -51,6 +55,16 @@ impl App {
         entry.set_notes(notes);
 
         Ok(())
+    }
+    // app.rs
+
+    pub fn save<P: AsRef<Path>>(&self, path: P, password: &[u8]) -> io::Result<()> {
+        save_vault(path, password, &self.vault)
+    }
+
+    pub fn load<P: AsRef<Path>>(path: P, password: &[u8]) -> io::Result<Self> {
+        let vault = load_vault(path, password)?;
+        Ok(Self::new(vault))
     }
 }
 #[cfg(test)]
@@ -70,9 +84,9 @@ mod tests {
             "My GitHub account",
         );
 
-        assert_eq!(app.vault().entries().len(), 1);
+        assert_eq!(app.entries().len(), 1);
 
-        let entry = &app.vault().entries()[0];
+        let entry = &app.entries()[0];
 
         assert_eq!(entry.title(), Some(b"GitHub".as_slice()));
         assert_eq!(entry.username(), Some(b"user123".as_slice()));

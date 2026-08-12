@@ -94,10 +94,10 @@ impl Entry {
             .records
             .iter()
             .find(|record| record.record_type == RecordType::Uuid)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "entry has no UUID."))?;
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Entry has no UUID."))?;
 
         Uuid::from_slice(&record.value)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid UUID."))
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid UUID."))
     }
     pub fn title(&self) -> Option<&[u8]> {
         self.records

@@ -32,11 +32,11 @@ pub fn encrypt(
     nonce_bytes: &[u8; 12],
 ) -> Result<Vec<u8>, aes_gcm::Error> {
     let key =
-        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("key must be exactly 32 bytes.");
+        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("Key must be exactly 32 bytes.");
 
     let cipher = Aes256Gcm::new(&key);
 
-    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("nonce must be exactly 12 bytes.");
+    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("Nonce must be exactly 12 bytes.");
 
     cipher.encrypt(&nonce, plaintext)
 }
@@ -47,9 +47,9 @@ pub fn decrypt(
     ciphertext: &[u8],
 ) -> Result<Vec<u8>, aes_gcm::Error> {
     let key =
-        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("key must be exactly 32 bytes.");
+        Key::<Aes256Gcm>::try_from(key_bytes.as_slice()).expect("Key must be exactly 32 bytes.");
     let cipher = Aes256Gcm::new(&key);
-    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("nonce must be exactly 12 bytes.");
+    let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("Nonce must be exactly 12 bytes.");
 
     cipher.decrypt(&nonce, ciphertext)
 }

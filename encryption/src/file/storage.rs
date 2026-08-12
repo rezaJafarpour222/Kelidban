@@ -15,7 +15,7 @@ pub fn encrypt_vault(password: &[u8], header: &FileHeader, vault: &Vault) -> io:
     );
     let plaintext = vault.serialize();
     let ciphertext = encrypt(&key, &plaintext, &header.nonce)
-        .map_err(|_| io::Error::other("failed to encrypt the vault."))?;
+        .map_err(|_| io::Error::other("Failed to encrypt the vault."))?;
 
     let mut output = Vec::with_capacity(FileHeader::SIZE + ciphertext.len());
     output.extend_from_slice(&header.serialize());
@@ -27,7 +27,7 @@ pub fn decrypt_vault(password: &[u8], data: &[u8]) -> io::Result<Vault> {
     if data.len() < FileHeader::SIZE {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "vault file is too small.",
+            "Vault file is too small.",
         ));
     }
     let header_bytes = &data[..FileHeader::SIZE];
@@ -43,7 +43,7 @@ pub fn decrypt_vault(password: &[u8], data: &[u8]) -> io::Result<Vault> {
     );
 
     let plaintext = crate::encryption::decrypt(&key, &header.nonce, ciphertext)
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "failed to decrypt vault."))?;
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Failed to decrypt vault."))?;
 
     Vault::deserialize(&plaintext)
 }

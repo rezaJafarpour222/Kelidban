@@ -28,7 +28,7 @@ impl Vault {
         if bytes.len() < 4 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "vault too small",
+                "Vault too small.",
             ));
         }
         let mut offset = 0;
@@ -41,7 +41,7 @@ impl Vault {
             if bytes.len() < offset + 4 {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "missing entry size",
+                    "Missing entry size.",
                 ));
             }
             let entry_size =
@@ -51,7 +51,7 @@ impl Vault {
             if bytes.len() < offset + entry_size {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "invalid entry size",
+                    "Invalid entry size.",
                 ));
             }
             let entry = Entry::deserialize(&bytes[offset..offset + entry_size])?;
@@ -83,12 +83,12 @@ impl Vault {
             .entries
             .iter()
             .position(|entry| entry.uuid().ok() == Some(uuid))
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "entry not found"))?;
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Entry not found."))?;
 
         if entry.uuid()? != uuid {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "replacement entry has a different UUID",
+                "Replacement entry has a different UUID.",
             ));
         }
 
@@ -101,7 +101,7 @@ impl Vault {
             .entries
             .iter()
             .position(|entry| entry.uuid().ok() == Some(uuid))
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "entry not found"))?;
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Entry not found."))?;
 
         self.entries.remove(index);
 
