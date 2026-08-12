@@ -140,4 +140,81 @@ mod tests {
 
         assert!(result.is_err());
     }
+    #[test]
+    fn save_and_load_vault() {
+        let password = b"test-password";
+        let path = "test-vault.kdb";
+
+        let mut vault = Vault::new();
+
+        let mut entry = Entry::new();
+
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        vault.add_entry(entry);
+
+        save_vault(path, password, &vault).unwrap();
+
+        let loaded = load_vault(path, password).unwrap();
+
+        assert_eq!(loaded.entries().len(), 1);
+        assert_eq!(
+            loaded.entries()[0].records()[0].record_type,
+            RecordType::Title
+        );
+
+        std::fs::remove_file(path).unwrap();
+    }
+    #[test]
+    fn load_with_wrong_password_fails() {
+        let correct_password = b"correct-password";
+        let wrong_password = b"wrong-password";
+        let path = "test-vault.kdb";
+
+        let mut vault = Vault::new();
+
+        let mut entry = Entry::new();
+
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        vault.add_entry(entry);
+
+        save_vault(path, correct_password, &vault).unwrap();
+
+        let result = load_vault(path, wrong_password);
+
+        assert!(result.is_err());
+
+        std::fs::remove_file(path).unwrap();
+    }
+    #[test]
+    fn truncated_vault_file_fails() {
+        let password = b"test-password";
+        let path = "test-vault.kdb";
+
+        let mut vault = Vault::new();
+
+        let mut entry = Entry::new();
+
+        entry.add_record(TlvRecord::new(RecordType::Title, b"GitHub".to_vec()));
+
+        vault.add_entry(entry);
+
+        save_vault(path, password, &vault).unwrap();
+
+        // Read the complete file.
+        let mut data = std::fs::read(path).unwrap();
+
+        // Remove the last byte.
+        data.pop();
+
+        // Write the damaged file back.
+        std::fs::write(path, data).unwrap();
+
+        let result = load_vault(path, password);
+
+        assert!(result.is_err());
+
+        std::fs::remove_file(path).unwrap();
+    }
 }
