@@ -6,6 +6,7 @@ pub enum Action {
     MoveUp,
     MoveDown,
     Search,
+    Esc,
     None,
 }
 pub enum Mode {
@@ -49,6 +50,9 @@ impl State {
 
             Action::Search => {
                 self.mode = Mode::Search;
+            }
+            Action::Esc => {
+                self.mode = Mode::Normal;
             }
             Action::None => {}
         }

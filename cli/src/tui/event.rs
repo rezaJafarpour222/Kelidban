@@ -12,6 +12,7 @@ pub fn read_action() -> io::Result<Action> {
                 KeyCode::Up | KeyCode::Char('k') => Action::MoveUp,
                 KeyCode::Down | KeyCode::Char('j') => Action::MoveDown,
                 KeyCode::Char('/') => Action::Search,
+                KeyCode::Esc => Action::Esc,
                 _ => continue,
             };
 
