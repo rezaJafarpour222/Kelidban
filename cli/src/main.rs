@@ -1,47 +1,45 @@
+pub mod app;
+pub mod tui;
+
+use std::io;
+
+use encryption::file::vault::Vault;
+use ratatui::DefaultTerminal;
+
 use crate::app::App;
 
-pub mod app;
+fn main() -> io::Result<()> {
+    ratatui::run(run)
+}
 
-fn main() {
-    // let path = String::from("test.kdb");
-    // let password = b"password";
-    // let mut app = app::App::new(Vault::new());
-    // app.add_entry(
-    //     "GitHub",
-    //     "user123",
-    //     "my-secret-password",
-    //     "https://github.com",
-    //     "My GitHub account",
-    // );
-    // app.save(path, password).unwrap();
-    //------------Loading---------------------
+fn run(terminal: &mut DefaultTerminal) -> io::Result<()> {
+    let mut app = App::new(Vault::new());
 
-    // let app = App::load(path, password).unwrap();
-    // let entries = app.entries();
-    // println!("entries:[{}]", entries.len());
-    // println!("UUID: {:}", entries[0].uuid().unwrap());
-    // println!(
-    //     "Title: {:}",
-    //     String::from_utf8_lossy(entries[0].title().unwrap_or_default())
-    // );
-    //
-    // println!(
-    //     "Username: {:}",
-    //     String::from_utf8_lossy(entries[0].username().unwrap_or_default())
-    // );
-    //
-    // println!(
-    //     "Password: {:}",
-    //     String::from_utf8_lossy(entries[0].password().unwrap_or_default())
-    // );
-    //
-    // println!(
-    //     "Notes: {:}",
-    //     String::from_utf8_lossy(entries[0].notes().unwrap_or_default())
-    // );
-    //
-    // println!(
-    //     "Url: {:}",
-    //     String::from_utf8_lossy(entries[0].url().unwrap_or_default())
-    // );
+    app.add_entry(
+        "GitHub",
+        "user123",
+        "secret",
+        "https://github.com",
+        "GitHub account",
+    );
+
+    app.add_entry(
+        "Bank",
+        "bankuser",
+        "bankpass",
+        "https://bank.example",
+        "Bank account",
+    );
+
+    let mut state = tui::state::State::new(app);
+
+    while !state.should_quit {
+        terminal.draw(|frame| tui::view::render(frame, &state))?;
+
+        let action = tui::event::read_action()?;
+
+        state.update(action);
+    }
+
+    Ok(())
 }
