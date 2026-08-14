@@ -1,7 +1,7 @@
 pub mod app;
 pub mod tui;
 
-use std::io;
+use std::{io, path::Path};
 
 use encryption::file::vault::Vault;
 use ratatui::DefaultTerminal;
@@ -13,28 +13,13 @@ fn main() -> io::Result<()> {
 }
 
 fn run(terminal: &mut DefaultTerminal) -> io::Result<()> {
-    let mut app = App::new(Vault::new());
-
-    app.add_entry(
-        "GitHub",
-        "user123",
-        "secret",
-        "https://github.com",
-        "GitHub account",
-    );
-
-    app.add_entry(
-        "Bank",
-        "bankuser",
-        "bankpass",
-        "https://bank.example",
-        "Bank account",
-    );
-
+    let password = "SecretPassword".as_bytes();
+    let path = Path::new("test.kelid");
+    let mut app = App::load(path, password)?;
     let mut state = tui::state::State::new(app);
 
     while !state.should_quit {
-        terminal.draw(|frame| tui::view::render(frame, &state))?;
+        terminal.draw(|frame| tui::view::render(frame, &mut state))?;
 
         let action = tui::event::read_action()?;
 

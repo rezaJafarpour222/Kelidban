@@ -50,7 +50,7 @@ impl FileHeader {
             version_major: VERSION_MAJOR,
             version_minor: VERSION_MINOR,
             flags: FLAGS,
-            argon_memory: 262144, // 256 * 1024
+            argon_memory: 65536, // 256 * 1024
             argon_iterations: 3,
             argon_parallelism: 2,
             salt: encryption::generate_salt(),

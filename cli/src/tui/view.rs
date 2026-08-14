@@ -1,31 +1,41 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Layout},
-    style::Style,
+    style::{Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
 
+use crate::tui::state::Screen;
+
 use super::state::State;
 
-pub fn render(frame: &mut Frame, state: &State) {
-    let area = frame.area();
-    let layout = Layout::default()
-        .direction(ratatui::layout::Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(1),
-            Constraint::Length(1),
-        ])
-        .split(area);
-    render_search(frame, state, layout[0]);
-    render_content(frame, state, layout[1]);
-    render_status_bar(frame, state, layout[2]);
+pub fn render(frame: &mut Frame, state: &mut State) {
+    if state.current_screen == Screen::Main {
+        let area = frame.area();
+        let layout = Layout::default()
+            .direction(ratatui::layout::Direction::Vertical)
+            .constraints([
+                Constraint::Min(1),
+                Constraint::Length(3),
+                Constraint::Length(1),
+            ])
+            .split(area);
+        render_content(frame, state, layout[0]);
+        render_search(frame, state, layout[1]);
+        render_status_bar(frame, state, layout[2]);
+    } else {
+        render_entry_screen(frame, state, frame.area());
+    }
 }
 
 fn render_search(frame: &mut Frame, state: &State, area: ratatui::layout::Rect) {
-    let search = Paragraph::new(format!("/{}", state.search))
-        .block(Block::default().borders(Borders::ALL).title("Search"));
+    let search = Paragraph::new(state.search.to_string()).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().magenta())
+            .title("Search"),
+    );
     frame.render_widget(search, area);
 }
 fn render_content(frame: &mut Frame, state: &State, area: ratatui::layout::Rect) {
@@ -50,9 +60,15 @@ fn render_entries(frame: &mut Frame, state: &State, area: ratatui::layout::Rect)
         })
         .collect();
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Entries"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Entries")
+                .border_style(Style::default().magenta()),
+        )
         .highlight_style(Style::default())
-        .highlight_symbol("> ");
+        .highlight_symbol("> ")
+        .highlight_style(Style::new().red());
     let mut state_list = ListState::default();
     state_list.select(if entries.is_empty() {
         None
@@ -65,8 +81,12 @@ fn render_details(frame: &mut Frame, state: &State, area: ratatui::layout::Rect)
     let entry = match state.app.entries().get(state.selected) {
         Some(entry) => entry,
         None => {
-            let paragraph = Paragraph::new("No entries")
-                .block(Block::default().borders(Borders::ALL).title(" Details "));
+            let paragraph = Paragraph::new("No entries").block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().magenta())
+                    .title(" Details "),
+            );
 
             frame.render_widget(paragraph, area);
             return;
@@ -86,8 +106,13 @@ fn render_details(frame: &mut Frame, state: &State, area: ratatui::layout::Rect)
         Line::from(vec![Span::raw("Notes:    "), Span::raw(notes)]),
     ];
 
-    let paragraph =
-        Paragraph::new(lines).block(Block::default().borders(Borders::ALL).title(" Details "));
+    let paragraph = Paragraph::new(lines).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().magenta())
+            .red()
+            .title(" Details "),
+    );
 
     frame.render_widget(paragraph, area);
 }
@@ -98,13 +123,30 @@ fn field_to_string(value: Option<&[u8]>) -> String {
         .unwrap_or("")
         .to_string()
 }
-fn render_status_bar(frame: &mut Frame, state: &State, area: ratatui::layout::Rect) {
+fn render_status_bar(frame: &mut Frame, state: &mut State, area: ratatui::layout::Rect) {
     let mode = match state.mode {
         super::state::Mode::Normal => "NORMAL",
         super::state::Mode::Search => "SEARCH",
     };
+    let message = state.notification().unwrap_or("");
+    let text = format!(
+        " {}   j/k Navigate   / Search   q Quit a Add -|  {}",
+        mode, message
+    );
+    let paragraph = Paragraph::new(text).block(Block::default().red());
+    frame.render_widget(paragraph, area);
+}
+fn render_entry_screen(frame: &mut Frame, state: &mut State, area: ratatui::layout::Rect) {
+    let layout = Layout::default()
+        .direction(ratatui::layout::Direction::Vertical)
+        .constraints([Constraint::Length(9), Constraint::Length(1)])
+        .split(area);
 
-    let text = format!(" {}   j/k Navigate   / Search   q Quit", mode);
+    render_status_bar(frame, state, layout[1]);
+    render_entry_form(frame, state, layout[0]);
+}
 
-    frame.render_widget(Paragraph::new(text), area);
+fn render_entry_form(frame: &mut Frame, state: &mut State, area: ratatui::layout::Rect) {
+    let paragraph = Paragraph::new("Form").block(Block::default().red());
+    frame.render_widget(paragraph, area);
 }

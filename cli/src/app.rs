@@ -67,6 +67,7 @@ impl App {
         Ok(Self::new(vault))
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
