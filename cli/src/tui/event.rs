@@ -13,6 +13,7 @@ pub fn read_action() -> io::Result<Action> {
                 KeyCode::Down | KeyCode::Char('j') => Action::MoveDown,
                 KeyCode::Char('/') => Action::Search,
                 KeyCode::Esc => Action::Esc,
+                KeyCode::Char('y') => Action::CopyPassword,
                 _ => continue,
             };
 
