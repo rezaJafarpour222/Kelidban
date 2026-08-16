@@ -7,7 +7,7 @@ use ratatui::DefaultTerminal;
 
 use crate::{
     app::App,
-    tui::{context_store::Context, main_render},
+    tui::{context::Context, main_render},
 };
 
 fn main() -> io::Result<()> {
@@ -17,7 +17,7 @@ fn main() -> io::Result<()> {
 fn run(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let password = "SecretPassword".as_bytes();
     let path = Path::new("test.kelid");
-    let mut app = App::load(path, password)?;
+    let app = App::load(path, password)?;
     let mut state = Context::new(app);
 
     while !state.should_quit {
@@ -25,7 +25,7 @@ fn run(terminal: &mut DefaultTerminal) -> io::Result<()> {
 
         let action = tui::event::read_action()?;
 
-        state.update(action);
+        state.dispatch(action);
     }
 
     Ok(())

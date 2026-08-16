@@ -4,8 +4,9 @@ use ratatui::{
 };
 
 use crate::tui::{
-    context_store::{Context, Screen},
-    entries_view::{render_content, render_search, render_status_bar},
+    context::{Context, Screen},
+    entries_view::render_content,
+    statusbar::{render_search, render_status_bar},
 };
 
 pub fn render(frame: &mut Frame, context: &mut Context) {

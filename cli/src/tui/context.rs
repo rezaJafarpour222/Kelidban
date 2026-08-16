@@ -21,6 +21,9 @@ pub enum Screen {
 }
 pub enum Action {
     Entries(EntriesAction),
+    Search,
+    SearchQuery(char),
+    DelSearchQuery,
     Quit,
     None,
     Esc,
@@ -52,7 +55,18 @@ impl Context {
     }
 
     pub fn notify(&mut self, message: &str) {
-        self.notification = Some(Notification::new(message, Duration::from_millis(500)));
+        let mode = match self.mode {
+            Mode::Normal => "NORMAL",
+            Mode::Search => "SEARCH",
+        };
+        let text = format!(
+            " {}   j/k Navigate   / Search   q Quit a Add -|  {}",
+            mode, message
+        );
+        self.notification = Some(Notification::new(
+            &text.to_string(),
+            Duration::from_millis(500),
+        ));
     }
     pub fn notification(&mut self) -> Option<&str> {
         if self.notification.as_ref().is_some_and(|n| n.is_expired()) {
@@ -61,13 +75,31 @@ impl Context {
         }
         self.notification.as_ref().map(|n| n.get_message())
     }
-    pub fn update(&mut self, action: Action) {
+    pub fn dispatch(&mut self, action: Action) {
         match action {
             Action::Quit => {
                 self.should_quit = true;
             }
-            Action::Entries(action) => self.entry_store.update(action, &self.app, self.mode),
-            Action::Esc => self.mode = Mode::Normal,
+            Action::Entries(action) => self.entry_store.dispatch(action, &self.app, self.mode),
+            Action::Esc => {
+                self.mode = Mode::Normal;
+                self.search = String::from("/");
+            }
+            Action::Search => {
+                self.mode = Mode::Search;
+                self.search.clear();
+            }
+            Action::SearchQuery(c) => {
+                if self.mode == Mode::Search {
+                    self.search.push(c);
+                }
+            }
+
+            Action::DelSearchQuery => {
+                if self.mode == Mode::Search {
+                    self.search.pop();
+                }
+            }
 
             Action::None => {}
         }

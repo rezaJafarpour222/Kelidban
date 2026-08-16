@@ -2,7 +2,7 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::tui::context_store::Action;
+use crate::tui::context::Action;
 
 pub fn read_action() -> io::Result<Action> {
     loop {
@@ -18,6 +18,11 @@ pub fn read_action() -> io::Result<Action> {
                 KeyCode::Char('y') => {
                     Action::Entries(super::entries_state::EntriesAction::MoveDown)
                 }
+
+                KeyCode::Char('/') => Action::Search,
+                KeyCode::Backspace => Action::DelSearchQuery,
+
+                KeyCode::Char(c) => Action::SearchQuery(c),
                 KeyCode::Esc => Action::Esc,
                 _ => continue,
             };

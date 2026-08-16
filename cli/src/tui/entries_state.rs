@@ -1,7 +1,7 @@
 use std::process::{Command, Stdio};
 
-use crate::tui::context_store::Mode;
-use crate::{app::App, tui::notification::Notification};
+use crate::app::App;
+use crate::tui::context::Mode;
 
 #[derive(Debug, Clone, Copy)]
 pub enum EntriesAction {
@@ -17,7 +17,7 @@ impl EntriesStore {
     pub fn new() -> Self {
         Self { selected: 0 }
     }
-    pub fn update(&mut self, action: EntriesAction, app: &App, mode: Mode) {
+    pub fn dispatch(&mut self, action: EntriesAction, app: &App, mode: Mode) {
         match action {
             EntriesAction::MoveUp => {
                 if self.selected > 0 {

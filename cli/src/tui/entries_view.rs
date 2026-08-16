@@ -6,17 +6,8 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
 
-use crate::tui::context_store::{Context, Mode};
+use crate::tui::context::Context;
 
-pub fn render_search(frame: &mut Frame, context: &Context, area: ratatui::layout::Rect) {
-    let search = Paragraph::new(context.search.to_string()).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().magenta())
-            .title("Search"),
-    );
-    frame.render_widget(search, area);
-}
 pub fn render_content(frame: &mut Frame, context: &Context, area: ratatui::layout::Rect) {
     let layout = Layout::default()
         .direction(ratatui::layout::Direction::Horizontal)
@@ -101,18 +92,5 @@ fn field_to_string(value: Option<&[u8]>) -> String {
         .and_then(|value| std::str::from_utf8(value).ok())
         .unwrap_or("")
         .to_string()
-}
-pub fn render_status_bar(frame: &mut Frame, context: &mut Context, area: ratatui::layout::Rect) {
-    let mode = match context.mode {
-        Mode::Normal => "NORMAL",
-        Mode::Search => "SEARCH",
-    };
-    let message = context.notification().unwrap_or("");
-    let text = format!(
-        " {}   j/k Navigate   / Search   q Quit a Add -|  {}",
-        mode, message
-    );
-    let paragraph = Paragraph::new(text).block(Block::default().red());
-    frame.render_widget(paragraph, area);
 }
 // NOTE: Add Entry Form
