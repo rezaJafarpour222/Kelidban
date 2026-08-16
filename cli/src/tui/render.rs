@@ -4,8 +4,10 @@ use ratatui::{
 };
 
 use crate::tui::{
-    context::{Context, Screen},
-    entries_view::render_content,
+    context::Context,
+    entries::render_content,
+    entry::render_form,
+    router::Screen,
     statusbar::{render_search, render_status_bar},
 };
 
@@ -22,6 +24,10 @@ pub fn render(frame: &mut Frame, context: &mut Context) {
             .split(area);
         render_content(frame, context, layout[0]);
         render_search(frame, context, layout[1]);
-        render_status_bar(frame, context, layout[2]);
+        let guide = String::from("j/k:navigation | a:Add");
+        render_status_bar(frame, layout[2], guide);
+    }
+    if context.screen == Screen::AddEntry {
+        render_form(frame, frame.area(), context);
     }
 }

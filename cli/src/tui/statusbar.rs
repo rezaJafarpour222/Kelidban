@@ -1,5 +1,4 @@
-use ratatui::prelude::Stylize;
-use ratatui::style::Style;
+use ratatui::style::{Style, Stylize};
 use ratatui::widgets::Borders;
 use ratatui::{
     Frame,
@@ -7,11 +6,9 @@ use ratatui::{
 };
 
 use crate::tui::context::Context;
-
-pub fn render_status_bar(frame: &mut Frame, context: &mut Context, area: ratatui::layout::Rect) {
-    let message = context.notification().unwrap_or("");
-    let paragraph = Paragraph::new(message).block(Block::default().red());
-    frame.render_widget(paragraph, area);
+pub fn render_status_bar(frame: &mut Frame, area: ratatui::layout::Rect, guide: String) {
+    let guide = Paragraph::new(guide).block(Block::default().red());
+    frame.render_widget(guide, area);
 }
 
 pub fn render_search(frame: &mut Frame, context: &Context, area: ratatui::layout::Rect) {

@@ -7,7 +7,7 @@ use ratatui::DefaultTerminal;
 
 use crate::{
     app::App,
-    tui::{context::Context, main_render},
+    tui::{context::Context, render, router::input_router},
 };
 
 fn main() -> io::Result<()> {
@@ -21,11 +21,11 @@ fn run(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let mut state = Context::new(app);
 
     while !state.should_quit {
-        terminal.draw(|frame| main_render::render(frame, &mut state))?;
+        terminal.draw(|frame| render::render(frame, &mut state))?;
 
-        let action = tui::event::read_action()?;
+        let action = input_router(&state.screen);
 
-        state.dispatch(action);
+        state.dispatch(action.unwrap());
     }
 
     Ok(())

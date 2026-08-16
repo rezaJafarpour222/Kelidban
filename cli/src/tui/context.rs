@@ -1,10 +1,9 @@
-use std::time::Duration;
-
 use crate::{
     app::App,
     tui::{
-        entries_state::{EntriesAction, EntriesStore},
-        notification::Notification,
+        entries::{EntriesAction, EntriesStore},
+        entry::{EntryAction, EntryStore},
+        router::Screen,
     },
 };
 
@@ -14,13 +13,10 @@ pub enum Mode {
     Search,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Screen {
-    Entries,
-    AddEntry,
-}
 pub enum Action {
     Entries(EntriesAction),
+    Entry(EntryAction),
+    EntryScreen,
     Search,
     SearchQuery(char),
     DelSearchQuery,
@@ -31,10 +27,10 @@ pub enum Action {
 
 pub struct Context {
     pub app: App,
-    pub entry_store: EntriesStore,
+    pub entries_store: EntriesStore,
+    pub entry_store: EntryStore,
     pub search: String,
     pub should_quit: bool,
-    pub notification: Option<Notification>,
     pub mode: Mode,
     pub screen: Screen,
     pub action: Action,
@@ -46,44 +42,34 @@ impl Context {
             app,
             search: String::from("/"),
             should_quit: false,
-            notification: None,
             mode: Mode::Normal,
             screen: Screen::Entries,
             action: Action::None,
-            entry_store: EntriesStore::new(),
+            entries_store: EntriesStore::new(),
+            entry_store: EntryStore::new(),
         }
     }
 
-    pub fn notify(&mut self, message: &str) {
-        let mode = match self.mode {
-            Mode::Normal => "NORMAL",
-            Mode::Search => "SEARCH",
-        };
-        let text = format!(
-            " {}   j/k Navigate   / Search   q Quit a Add -|  {}",
-            mode, message
-        );
-        self.notification = Some(Notification::new(
-            &text.to_string(),
-            Duration::from_millis(500),
-        ));
-    }
-    pub fn notification(&mut self) -> Option<&str> {
-        if self.notification.as_ref().is_some_and(|n| n.is_expired()) {
-            self.notification = None;
-            return None;
-        }
-        self.notification.as_ref().map(|n| n.get_message())
-    }
     pub fn dispatch(&mut self, action: Action) {
         match action {
+            Action::Entries(action) => {
+                self.entries_store.dispatch(action, &self.app, self.mode);
+            }
+            Action::Entry(action) => self.entry_store.dispatch(action, &self.app),
+
+            Action::EntryScreen => self.screen = Screen::AddEntry,
+
             Action::Quit => {
                 self.should_quit = true;
             }
-            Action::Entries(action) => self.entry_store.dispatch(action, &self.app, self.mode),
             Action::Esc => {
-                self.mode = Mode::Normal;
-                self.search = String::from("/");
+                if self.screen == Screen::Entries {
+                    self.mode = Mode::Normal;
+                    self.search = String::from("/");
+                }
+                if self.screen == Screen::AddEntry {
+                    self.screen = Screen::Entries;
+                }
             }
             Action::Search => {
                 self.mode = Mode::Search;
