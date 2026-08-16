@@ -2,21 +2,23 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::tui::state::Action;
+use crate::tui::context_store::Action;
 
 pub fn read_action() -> io::Result<Action> {
     loop {
         if let Event::Key(key) = event::read()? {
             let action = match key.code {
                 KeyCode::Char('q') => Action::Quit,
-                KeyCode::Up | KeyCode::Char('k') => Action::MoveUp,
-                KeyCode::Down | KeyCode::Char('j') => Action::MoveDown,
-                KeyCode::Char('y') => Action::CopyPassword,
-                KeyCode::Char('/') => Action::Search,
-                KeyCode::Char('a') => Action::EntryRegistery,
-                KeyCode::Backspace => Action::DeleteQuery,
+                KeyCode::Up | KeyCode::Char('k') => {
+                    Action::Entries(super::entries_state::EntriesAction::MoveUp)
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    Action::Entries(super::entries_state::EntriesAction::MoveDown)
+                }
+                KeyCode::Char('y') => {
+                    Action::Entries(super::entries_state::EntriesAction::MoveDown)
+                }
                 KeyCode::Esc => Action::Esc,
-                KeyCode::Char(c) => Action::AddQuery(c),
                 _ => continue,
             };
 
