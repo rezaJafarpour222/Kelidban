@@ -66,6 +66,9 @@ impl App {
         let vault = load_vault(path, password)?;
         Ok(Self::new(vault))
     }
+    pub fn gen_password(&self) -> String {
+        encryption::encryption::generate_password(32)
+    }
 }
 
 #[cfg(test)]

@@ -63,7 +63,7 @@ impl EntryStore {
         }
     }
 
-    pub fn dispatch(&mut self, action: EntryAction, _app: &App) {
+    pub fn dispatch(&mut self, action: EntryAction, app: &mut App) {
         match action {
             EntryAction::Up => {
                 if self.active > 0 {
@@ -106,22 +106,24 @@ impl EntryStore {
 
             EntryAction::GeneratePassword => {
                 if self.active == 2 {
-                    self.form.password = generate_password();
+                    self.form.password = app.gen_password();
                 }
                 if self.active == 5 {
-                    self.form.password = generate_password();
+                    app.add_entry(
+                        "Title",
+                        &self.form.username,
+                        &self.form.username,
+                        &self.form.url,
+                        &self.form.notes,
+                    );
                 }
 
                 if self.active == 6 {
-                    self.form.password = generate_password();
+                    self.form.password = app.gen_password();
                 }
             }
         }
     }
-}
-
-fn generate_password() -> String {
-    "GeneratedPassword123!".to_string()
 }
 
 // -------------------------

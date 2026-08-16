@@ -53,9 +53,10 @@ impl Context {
     pub fn dispatch(&mut self, action: Action) {
         match action {
             Action::Entries(action) => {
-                self.entries_store.dispatch(action, &self.app, self.mode);
+                self.entries_store
+                    .dispatch(action, &mut self.app, self.mode);
             }
-            Action::Entry(action) => self.entry_store.dispatch(action, &self.app),
+            Action::Entry(action) => self.entry_store.dispatch(action, &mut self.app),
 
             Action::EntryScreen => self.screen = Screen::AddEntry,
 

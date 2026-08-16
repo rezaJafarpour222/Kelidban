@@ -1,6 +1,6 @@
 use aes_gcm::{Aes256Gcm, Key, KeyInit, Nonce, aead::Aead};
 use argon2::{Algorithm, Argon2, Params, Version};
-use rand::Rng;
+use rand::{Rng, RngExt};
 pub fn derive_key(
     password: &[u8],
     salt: &[u8],
@@ -52,4 +52,20 @@ pub fn decrypt(
     let nonce = Nonce::try_from(nonce_bytes.as_slice()).expect("Nonce must be exactly 12 bytes.");
 
     cipher.decrypt(&nonce, ciphertext)
+}
+
+pub fn generate_password(length: usize) -> String {
+    let chars = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                  abcdefghijklmnopqrstuvwxyz\
+                  0123456789\
+                  !@#$%^&*";
+
+    let mut rng = rand::rng();
+
+    (0..length)
+        .map(|_| {
+            let index = rng.random_range(0..chars.len());
+            chars[index] as char
+        })
+        .collect()
 }
